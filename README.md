@@ -2,6 +2,11 @@
 
 Convert Ply file to octree chunked.
 
+
+```
+go build -o ply2octree
+```
+
 ```
 $> ply2octree <ply-file> <otput-dir>
 ```
