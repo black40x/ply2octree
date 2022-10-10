@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"os"
 	"path"
-	"pcloud/pkg/octree"
+	"ply2octree/pkg/octree"
 )
 
 type MetaBoundingBox struct {
@@ -16,7 +16,7 @@ type MetaBoundingBox struct {
 type MetaJson struct {
 	Spacing     float64
 	BoundingBox MetaBoundingBox
-	Hierarchy   []string
+	Hierarchy   []interface{}
 }
 
 type Converter struct {
@@ -84,7 +84,7 @@ func (c *Converter) flush(aabb *octree.AABB) error {
 					}
 				}
 
-				meta.Hierarchy = append(meta.Hierarchy, descendant.Name())
+				meta.Hierarchy = append(meta.Hierarchy, [2]interface{}{descendant.Name(), descendant.PointsCount()})
 			}
 
 			hrcFlushed++

@@ -3,7 +3,7 @@ package main
 import (
 	"errors"
 	"os"
-	"pcloud/pkg"
+	"ply2octree/pkg"
 )
 
 func main() {

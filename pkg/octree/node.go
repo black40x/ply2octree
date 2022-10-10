@@ -89,6 +89,14 @@ func (n *Node) Spacing() float64 {
 	return Spacing / math.Pow(2.0, float64(n.Level))
 }
 
+func (n *Node) PointsCount() int {
+	if n.NumAccepted == 0 {
+		return len(n.Store)
+	} else {
+		return n.NumAccepted
+	}
+}
+
 func (n *Node) Add(point *Point) *Node {
 	n.AddCalledSinceLastFlush = true
 
