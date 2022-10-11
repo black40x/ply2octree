@@ -7,7 +7,7 @@ import (
 )
 
 var maxDepth = -1
-var maxStoreSize = 20000
+var maxStoreSize = 10000
 
 var Spacing = 0.0
 var DiagonalFraction = 200.0
