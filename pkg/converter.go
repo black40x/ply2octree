@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/schollz/progressbar/v3"
 	"os"
 	"path"
 	"ply2octree/pkg/octree"
@@ -118,18 +119,21 @@ func (c *Converter) Convert() error {
 		return err
 	} else {
 		PrintInfo(fmt.Sprintf("Ply file reded with %d points", len(reader.GetPoints())))
+		bar := progressbar.Default(int64(len(reader.GetPoints())), "processing")
 
 		c.root = octree.NewRootNode(reader.GetAABB())
 		tightAABB := octree.NewEmptyAABB()
 		for i, point := range reader.GetPoints() {
+
+			if i%100 == 0 {
+				bar.Add(100)
+			}
 			acceptedBy := c.root.Add(point)
 			if acceptedBy != nil {
 				tightAABB.Update(point.Pos)
 			}
-			if i%1000 == 0 {
-				PrintInfo(fmt.Sprintf("Processed: %d points", i))
-			}
 		}
+		bar.Finish()
 
 		err := c.flush(tightAABB)
 
