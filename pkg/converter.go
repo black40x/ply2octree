@@ -4,7 +4,9 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/black40x/plyfile/plyfile"
 	"github.com/schollz/progressbar/v3"
+	"io"
 	"os"
 	"path"
 	"ply2octree/pkg/octree"
@@ -106,41 +108,73 @@ func (c *Converter) flush(aabb *octree.AABB) error {
 
 func (c *Converter) Convert() error {
 	PrintInfo("Convert started...")
-	reader := octree.NewPlyReader(1)
-	err := reader.ReadPly(c.plyFile)
+
+	ply, err := plyfile.Open(c.plyFile)
+	if err != nil {
+		return err
+	}
+	defer ply.Close()
+
+	point := plyfile.Point{}
+	aabb := octree.NewEmptyAABB()
+	r, err := ply.GetElementReader("vertex")
+	if err == nil {
+		for {
+			_, err := r.ReadNext(&point)
+			if err == io.EOF {
+				break
+			}
+			aabb.Update(&octree.Vector3{X: point.X, Y: point.Y, Z: point.Z})
+		}
+	} else {
+		return err
+	}
 
 	if octree.DiagonalFraction != 0 {
-		octree.Spacing = reader.GetAABB().Size.Len() / octree.DiagonalFraction
+		octree.Spacing = aabb.Size.Len() / octree.DiagonalFraction
 	} else if octree.Spacing == 0 {
 		octree.DiagonalFraction = 200
 	}
 
+	r.Reset()
+	PrintInfo(fmt.Sprintf("Ply file reded with %d points", r.Count()))
+	bar := progressbar.Default(r.Count(), "processing")
+
+	c.root = octree.NewRootNode(aabb)
+	tightAABB := octree.NewEmptyAABB()
+
+	for {
+		n, err := r.ReadNext(&point)
+		if err == io.EOF {
+			break
+		}
+		if n%100 == 0 {
+			bar.Add(100)
+		}
+		ocPoint := &octree.Point{
+			Pos: &octree.Vector3{
+				X: point.X,
+				Y: point.Y,
+				Z: point.Z,
+			},
+			R: point.R,
+			G: point.G,
+			B: point.B,
+		}
+		acceptedBy := c.root.Add(ocPoint)
+		if acceptedBy != nil {
+			tightAABB.Update(ocPoint.Pos)
+		}
+		aabb.Update(&octree.Vector3{X: point.X, Y: point.Y, Z: point.Z})
+	}
+
+	bar.Finish()
+
+	err = c.flush(tightAABB)
 	if err != nil {
 		return err
-	} else {
-		PrintInfo(fmt.Sprintf("Ply file reded with %d points", len(reader.GetPoints())))
-		bar := progressbar.Default(int64(len(reader.GetPoints())), "processing")
-
-		c.root = octree.NewRootNode(reader.GetAABB())
-		tightAABB := octree.NewEmptyAABB()
-		for i, point := range reader.GetPoints() {
-
-			if i%100 == 0 {
-				bar.Add(100)
-			}
-			acceptedBy := c.root.Add(point)
-			if acceptedBy != nil {
-				tightAABB.Update(point.Pos)
-			}
-		}
-		bar.Finish()
-
-		err := c.flush(tightAABB)
-
-		if err != nil {
-			return err
-		}
 	}
+
 	PrintInfo("Convert finished!")
 	return nil
 }

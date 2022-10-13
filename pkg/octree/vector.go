@@ -5,6 +5,11 @@ import (
 	"math"
 )
 
+type Point struct {
+	Pos     *Vector3
+	R, G, B byte
+}
+
 type Vector3 struct {
 	X, Y, Z float64
 }
